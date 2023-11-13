@@ -76,7 +76,7 @@ class SymbolTable(object):
             with open(fileName, "r", encoding="utf-8") as file:
 
                 for line in file:
-                    lines.append(line.strip())
+                    lines.append(line.strip()+ '\n')
 
         #exceptions to handle exceptions and they are easier to fix problems
 
@@ -98,7 +98,7 @@ class SymbolTable(object):
             joing_lines = ''.join(list_of_lines)
             for index, line in enumerate(list_of_lines):
 
-                line_number = index #it counts the different lines and is added to the object inside the stack
+                line_number = index + 1 #it counts the different lines and is added to the object inside the stack
                 fullLine = line
 
                 #pattern to match correct line code (int x = 10)
@@ -122,8 +122,8 @@ class SymbolTable(object):
                 for match in matches_no_var:
                       no_var_name, no_delimiter = match
 
-
-                if  self._cheIfNameAlreadyExists(no_var_name) and no_delimiter != None:
+                if data_type == None:
+                 if  self._cheIfNameAlreadyExists(variable_name) and no_delimiter != None:
                         print(f"ERROR-in line {line_number}: the name '{no_var_name}' has not been declared.")
 
                 if data_type == "int" or data_type == "float" or data_type == "string" or data_type == "void":
@@ -147,7 +147,7 @@ class SymbolTable(object):
                                 line = re.split(r"[(\,\)\' ']", fullLine)
                                 var_type = BuiltinTypeSymbol(data_type)
                                 name = variable_name
-                                line_number =+ 1
+                                line_number = line_number+1
                                 if self._cheIfNameAlreadyExists(name):
                                     methodHashTable = hash_table.HashTable()
                                     self._symbols.insert(name, VarSymbol(name, var_type, line_number,True ))
@@ -171,7 +171,7 @@ class SymbolTable(object):
                                 matches_correct_code = re.findall(pattern, joing_lines, re.DOTALL)
                                 for match in matches_correct_code:
                                     cont_inside_brces = match
-                                    line_number_inside_brces = line_number+1
+                                    line_number_inside_brces = line_number
 
                                     pattern = r'(int|float|string|return)\s+(\w+)\s*='
 
@@ -213,6 +213,7 @@ class SymbolTable(object):
                                 #it matches the return value from the
                                 pattern_return = r'(return)\s+(\w+)'
                                 match_return = re.findall(pattern_return, match)
+
                                 for match_r in match_return:
 
                                     return_name, return_var = match_r
@@ -222,15 +223,15 @@ class SymbolTable(object):
 
 
                                     # if there is a } so it pops a element from the stack
-                                    for match_bra in matches_correct_code:
-                                        if '}' in match_bra:
-                                            self.scopeStack.pop()
+                                for match_bra in matches_correct_code:
+                                    if '}' in match_bra:
+                                        self.scopeStack.pop()
                                     print("Content inside braces:")
                                     print(cont_inside_brces)
                                     print("Int Variables in this scope:")
                                     print(int_variables_in_scope)
 
-                                    self.check_var_exists_inside_table(cont_inside_brces, line_number_inside_brces, list_of_lines)
+                                self.check_var_exists_inside_table(cont_inside_brces, line_number_inside_brces, list_of_lines)
 
                                 # if there is a } so it pop a element from the stack
                                 for match_bra in matches_correct_code:
@@ -287,6 +288,7 @@ class SymbolTable(object):
         matches = re.finditer(pattern, line)
 
         for match in matches:
+            line_number = line_number + 1
             var_name = match.group().rstrip('=').strip()
             find =   self.scopeStack.find(var_name)
             print(var_name)
@@ -330,7 +332,7 @@ class ScopeSymbolStack():
     def __init__(self):
         self.stackSymbolTable = []
 
-    ''' push or updte. if it finds the same scope name in the stack, it will update the scope, so only wil be 3 scopes'''
+    ''' push or updte. if it finds the same scope name in the stack, it will update the scope, so only there will be 3 scopes'''
     def push(self, scopeSymbol):
 
         if scopeSymbol._scopeLevel in self.stackSymbolTable:

@@ -1,0 +1,8 @@
+ x = 40
+void funcion(float v, string n){
+ if (v > 0.0){
+ n = “Mayor”
+ j = j + 1
+ x = x + 5
+ }
+ }
