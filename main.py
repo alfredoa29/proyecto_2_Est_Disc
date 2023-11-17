@@ -2,14 +2,17 @@ import re
 
 import hash_table
 
-
+''' Class to crete symbols and save them in a symbol table and it is a superclass.
+name could be int,string or float
+'''
 class Symbol:
     def __init__(self, name, type=None, line=None):
         self.name = name
         self.type = type
         self.line = line
 
-
+''' Class to create symbols table BuiltinTypeSymbol are reserved words, string,int, float,void
+'''
 class BuiltinTypeSymbol(Symbol):
     def __init__(self, name):
         super().__init__(name)
@@ -23,7 +26,9 @@ class BuiltinTypeSymbol(Symbol):
             name=self.name,
         )
 
-
+''' Class to create variables and save them in the symbol table
+so if the program finds a variable, it will be created and saved into the symbol table
+'''
 class VarSymbol(Symbol):
     def __init__(self, name, type, line=None):
         super().__init__(name, type, line)
@@ -36,7 +41,8 @@ class VarSymbol(Symbol):
 
     __repr__ = __str__
 
-
+''' It creates a symbol table of hash table and creates the different scopes of the code that is being analized 
+'''
 class SymbolTable(object):
     def __init__(self):
         self._symbols = hash_table.HashTable()
@@ -60,8 +66,8 @@ class SymbolTable(object):
 
         return str(self._symbols.__str__())
 
-    def openFile(self):
-        return self._openFile("codigoBueno.txt")
+    def openFile(self, filename):
+        return self._openFile(filename)
 
 
 
@@ -86,8 +92,8 @@ class SymbolTable(object):
             print(f"An error occurred in method openfile: {e}")
         return lines
 
-    def createSymbolTable(self):
-        self._createSymbolTable(self.openFile())
+    def createSymbolTable(self, filename):
+        self._createSymbolTable(self.openFile(filename))
 
     def _createSymbolTable(self, list_of_lines):
 
@@ -226,10 +232,10 @@ class SymbolTable(object):
                                 for match_bra in matches_correct_code:
                                     if '}' in match_bra:
                                         self.scopeStack.pop()
-                                    print("Content inside braces:")
-                                    print(cont_inside_brces)
-                                    print("Int Variables in this scope:")
-                                    print(int_variables_in_scope)
+                                    #print("Content inside braces:")
+                                    #print(cont_inside_brces)
+                                    #print("Int Variables in this scope:")
+                                    #print(int_variables_in_scope)
 
                                 self.check_var_exists_inside_table(cont_inside_brces, line_number_inside_brces, list_of_lines)
 
@@ -245,7 +251,7 @@ class SymbolTable(object):
         except Exception as e:
             print(f"An error occurred in method _createSymbolTable: {e}")
 
-    '''This method cheks if the variables exist in the symbol table and if it does not exist in the symbol table it returns -1
+    '''This method checks if the variables exist in the symbol table and if it does not exist in the symbol table it returns -1
     and returns false'''
     def _cheIfNameAlreadyExists(self, name):
         return self.search(name) == -1
@@ -291,7 +297,7 @@ class SymbolTable(object):
             line_number = line_number + 1
             var_name = match.group().rstrip('=').strip()
             find =   self.scopeStack.find(var_name)
-            print(var_name)
+            #print(var_name)
             if find ==  None:
                 print(f"ERROR-in line {line_number}:  variable " + var_name + " not declared")
 
@@ -300,8 +306,13 @@ class SymbolTable(object):
 
         return_var = self.scopeStack.find(var_name)
         method_var = self.scopeStack.find(self.function_name)
-        if method_var.type == return_var.type:
-         return True
+        if method_var.type.name == return_var.type.name:
+            return True
+        else:
+            return False
+
+
+
     ''' the function checks the list of lines from the txt and tries to match  the var or methods and return the # of the line that it is'''
     def find_line_of_code(self, word_list, word_to_find):
         for index, word in enumerate(word_list):
@@ -311,7 +322,9 @@ class SymbolTable(object):
                 return index
         return -1
 
-
+''' It creates a new scope, so the class table will have 3 scopes, global scope, function scope and inner 
+scope
+'''
 class ScopeSymbol(SymbolTable):
 
      def __init__(self, scopeLevel, scopeName, scopeTables):
@@ -383,6 +396,11 @@ class ScopeSymbolStack():
 
 
 
+
+print("\n<---------------Codigo fuente incorrecto-----------------------------------> \n")
 symbol_table = SymbolTable()
-symbol_table.createSymbolTable()
+symbol_table.createSymbolTable("codigoincorrecto.txt")
 #print(symbol_table)
+print("\n<---------------Codigo fuente correcto-----------------------------------> \n")
+symbol_table2 = SymbolTable()
+symbol_table2.createSymbolTable("codigoBueno.txt")
