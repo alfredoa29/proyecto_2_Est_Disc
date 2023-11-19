@@ -49,15 +49,22 @@ class SymbolTable(object):
         self.mathSymbols = {'=': '=', '+':'+', '-':'-'}
         self.scopeStack = ScopeSymbolStack()
         self.function_name = "" #name of the current funcion exampple: int foo()
+        '''
+        metodo que guarda el "simbolo-variable" en el hash table
+        '''
     def store(self, symbol):
         #print('Define: %s' % symbol)
         self._symbols.insert(symbol.name, symbol)
-
+        '''
+        metodo que busca el "el nombre de la variable" en el hash table
+        '''
     def search(self, key):
         #print('Lookup: %s' % key)
         symbol = self._symbols.search(key)
         return symbol
-
+        '''
+        metodo que busca el "el nombre de la variable" en el hash table y retorna true o false
+        '''
     def lookup(self, key):
         if key in self.mathSymbols:
             return  True
@@ -65,7 +72,9 @@ class SymbolTable(object):
     def __str__(self):
 
         return str(self._symbols.__str__())
-
+        '''
+        metodo rapper para abrir el archivo txt con el codigo del archivo a esacanear
+        '''
     def openFile(self, filename):
         return self._openFile(filename)
 
@@ -82,7 +91,7 @@ class SymbolTable(object):
             with open(fileName, "r", encoding="utf-8") as file:
 
                 for line in file:
-                    lines.append(line.strip()+ '\n')
+                    lines.append(line.strip()+ '\n') #agrega un salto de linea cuando encuentre un salto de linea
 
         #exceptions to handle exceptions and they are easier to fix problems
 
@@ -91,7 +100,9 @@ class SymbolTable(object):
         except Exception as e:
             print(f"An error occurred in method openfile: {e}")
         return lines
-
+        '''
+        metodo rapper para crear la tabla de simbolos 
+        '''
     def createSymbolTable(self, filename):
         self._createSymbolTable(self.openFile(filename))
 
@@ -264,6 +275,13 @@ class SymbolTable(object):
         return self.search(name)
 
     def _checkVarsInsideFunction(self, line, line_number, hashtable):
+        '''
+
+        :param line: linea con codigo inner de la funcion
+        :param line_number: numero de lineea
+        :param hashtable: la tabla hasha en la que se almacena las variables internas de la funcion
+        :return: retorna el hastable modificado con las nuevas variables encontradas en le codigo
+        '''
 
         try:
             #tries to find the vars inside the parerhesis of the method like '(float v, string n)'
@@ -327,6 +345,13 @@ class SymbolTable(object):
       var_type es de la variable que esta dentro del hashtable y valor que se esta asignando 
       '''
     def _check_var_type(self, var_type,var_value,line_number):
+        '''
+
+        :param var_type: tipo de variable que ya se encuentra en el hashtable y hay quee comprarar
+        :param var_value: es el valor que se le esta asignando a la variable y que hay que comprobar si hace match
+        :param line_number: nuumero de linea en la que esta esete ecodigo en el txt
+        :return:
+        '''
 
         #pattern1 es x= x + 5
         pattern1 = r'\b(\w+)\s*([+*\/-])\s*([^\n]+)\b'
@@ -341,10 +366,10 @@ class SymbolTable(object):
                 var_name, operator, var_value = match
                 find = self.scopeStack.find(var_name)
                 if find == None:
-                    #print(f"ERROR-in line {line_number}:  variable " + var_name + " not declared")
+
                     return False
                 elif find.type.name != var_type:
-                    #print(f"ERROR-in line {line_number}:  variable " + var_name + " not declared")
+
                     return False
                 else:
                     return True
@@ -371,9 +396,16 @@ class SymbolTable(object):
 
 
 
-
+    '''
+       metodo que chequea si el return de la funcion es correecto o esta retornando una variable que no hacee match a la 
+       declarada anteriormente por la funcion
+     '''
     def chek_return_var(self, var_name):
+        '''
 
+        :param var_name: nombre de la variable a reevisar
+        :return:
+        '''
         return_var = self.scopeStack.find(var_name)
         method_var = self.scopeStack.find(self.function_name)
         if method_var.type.name == return_var.type.name:
@@ -397,7 +429,14 @@ scope
 '''
 class ScopeSymbol(SymbolTable):
 
+
      def __init__(self, scopeLevel, scopeName, scopeTables):
+         '''
+
+         :param scopeLevel: hay 3 scopes 1,2,3-global,metodo y inner scope
+         :param scopeName: global,metodo y inner
+         :param scopeTables: son las diferentes hastables scopes
+         '''
          self._scopeLevel = scopeLevel
          self._scopeName = scopeName
          self._scopeTables = scopeTables
@@ -410,7 +449,11 @@ class ScopeSymbol(SymbolTable):
          result = self._scopeTables.search(key)
          return result
 
-
+'''
+    Esta clase se encarga de los diferentes scopes del codigo. See utiliza un stack para lograr los diferentes scopes
+    primer push es global,segundo es funcion y tercero es inner scope, asi mismo en las busquedas, va hacinedo pop
+    entre los diferentes scopes y buscando en las diferentes hashtablees.
+'''
 class ScopeSymbolStack():
     def __init__(self):
         self.stackSymbolTable = []
