@@ -1,9 +1,11 @@
 x = 40
 int j = 10
+
 int funcion(float v, string n){
  if (v > 0.0){
  n = “Mayor”
  x = x + 5
+int p = 10
  }
  return n
  }

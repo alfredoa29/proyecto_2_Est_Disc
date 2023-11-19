@@ -110,7 +110,7 @@ class SymbolTable(object):
                 #pattern to match correct line code (int x = 10)
                 pattern = r'(int|float|string|void)\s+(\w+)\s*([=(])'
                 # pattern to match incorrect line code without var ( x = 10)
-                pattern3 = r'(\w+)\s*=\s*(\d+)'
+                pattern3 =  r'\b(\w+)\s*([=])\s*("[^"]*"|\S+)\s*\n'
                 matches_correct_code = re.findall(pattern, line)
                 matches_no_var = re.findall(pattern3, line)
 
@@ -120,16 +120,17 @@ class SymbolTable(object):
 
                 no_var_name = None
                 no_delimiter = None
+                no_var_value = None
 
                     #matches the code with vars and = ( var = 10
                 for match in matches_correct_code:
                     data_type , variable_name, delimiter = match
                 # matches the code without vars x = 10
                 for match in matches_no_var:
-                      no_var_name, no_delimiter = match
+                      no_var_name, no_delimiter,no_var_value = match
 
                 if data_type == None:
-                 if  self._cheIfNameAlreadyExists(variable_name) and no_delimiter != None:
+                 if  self._cheIfNameAlreadyExists(no_var_name) == -1 and self.scopeStack.find(no_var_name)==None   and no_delimiter != None:
                         print(f"ERROR-in line {line_number}: the name '{no_var_name}' has not been declared.")
 
                 if data_type == "int" or data_type == "float" or data_type == "string" or data_type == "void":
@@ -165,7 +166,7 @@ class SymbolTable(object):
 
                                 else:
                                     print(f"ERROR-in line {self.check_var_exists_inside_table(list_of_lines, name)}: the name '{name}' already exists.")
-                                methodHashTable = hash_table.HashTable()
+                                #methodHashTable = hash_table.HashTable()
 
                                 #it checks if there are vars inside the mthodscope  int funcion(float v, string n)
                                 self._checkVarsInsideFunction(fullLine, line_number, methodHashTable)
@@ -189,27 +190,31 @@ class SymbolTable(object):
                                     int_variables_in_scope = []
                                     innerHasTable = hash_table.HashTable()
                                     scope = ScopeSymbol(3, "inner", innerHasTable)
+
                                     for matchIn in matches2:
                                         line_number_inside_brces =+ 1
                                         data_type, variable_name = matchIn.groups()
                                         if data_type == 'int':
+                                            var_type = BuiltinTypeSymbol(data_type)
                                             name = variable_name.strip(";")
                                             int_variables_in_scope.append(name)
-                                            innerHasTable.insert(name, VarSymbol(name, data_type, line_number))
-                                            scope = ScopeSymbol(3, "inner", line_number_inside_brces+1)
+                                            innerHasTable.insert(name, VarSymbol(name, var_type, line_number))
+                                            scope = ScopeSymbol(3, "inner", innerHasTable)
                                             self.scopeStack.push(scope)
                                         if data_type == 'float':
+                                            var_type = BuiltinTypeSymbol(data_type)
                                             name = variable_name.strip(";")
                                             int_variables_in_scope.append(name)
-                                            innerHasTable.insert(name, VarSymbol(name, data_type, line_number))
-                                            scope = ScopeSymbol(3, "inner", line_number_inside_brces+1)
+                                            innerHasTable.insert(name, VarSymbol(name, var_type, line_number))
+                                            scope = ScopeSymbol(3, "inner", innerHasTable)
                                             self.scopeStack.push(scope)
 
                                         if data_type == 'string':
+                                            var_type = BuiltinTypeSymbol(data_type)
                                             name = variable_name.strip(";")
                                             int_variables_in_scope.append(name)
-                                            innerHasTable.insert(name, VarSymbol(name, data_type, line_number))
-                                            scope = ScopeSymbol(3, "inner", line_number_inside_brces+1)
+                                            innerHasTable.insert(name, VarSymbol(name, var_type, line_number))
+                                            scope = ScopeSymbol(3, "inner", innerHasTable)
                                             self.scopeStack.push(scope)
                                             # creo que voy a borrar esto
                                         if  data_type == 'return':
@@ -220,11 +225,14 @@ class SymbolTable(object):
                                 pattern_return = r'(return)\s+(\w+)'
                                 match_return = re.findall(pattern_return, match)
 
+                                self.check_var_exists_inside_table(cont_inside_brces, line_number_inside_brces,
+                                                                   list_of_lines)
+
                                 for match_r in match_return:
 
                                     return_name, return_var = match_r
                                     if not self.chek_return_var(return_var):
-                                        print(f"ERROR-in line {self.find_line_of_code(list_of_lines,'return' )}: the return value '{return_var}' does not match with de declaration of {self.function_name}")
+                                        print(f"ERROR-in line {self.find_line_of_code(list_of_lines,'return' )+1}: the return value '{return_var}' does not match with de declaration of {self.function_name}")
 
 
 
@@ -237,7 +245,6 @@ class SymbolTable(object):
                                     #print("Int Variables in this scope:")
                                     #print(int_variables_in_scope)
 
-                                self.check_var_exists_inside_table(cont_inside_brces, line_number_inside_brces, list_of_lines)
 
                                 # if there is a } so it pop a element from the stack
                                 for match_bra in matches_correct_code:
@@ -254,7 +261,7 @@ class SymbolTable(object):
     '''This method checks if the variables exist in the symbol table and if it does not exist in the symbol table it returns -1
     and returns false'''
     def _cheIfNameAlreadyExists(self, name):
-        return self.search(name) == -1
+        return self.search(name)
 
     def _checkVarsInsideFunction(self, line, line_number, hashtable):
 
@@ -289,17 +296,80 @@ class SymbolTable(object):
     it checks if the variables inside the function exists in the hashtable, but firts it goes to the stack and itarites it
     '''
     def check_var_exists_inside_table(self, line, line_number, list_of_lines):
-
-        pattern = r'\b[^\d\W]\w*\b(?=\s*=\s*[^=])'
+     #hace match   si encuentra variables
+        pattern = r'\b(\w+)\s*=\s*([^\n]+)\b'
         matches = re.finditer(pattern, line)
 
+        pattern3 = r'\b(\w+)\s*([=])\s*("[^"]*"|\S+)\s*\n'
+        #matches_no_var = re.findall(pattern3, line)
+
+
+
         for match in matches:
+            var_name, var_value = match.groups()
             line_number = line_number + 1
-            var_name = match.group().rstrip('=').strip()
+            #var_name = match.group().rstrip('=').strip()
             find =   self.scopeStack.find(var_name)
-            #print(var_name)
+            #print(match)
             if find ==  None:
                 print(f"ERROR-in line {line_number}:  variable " + var_name + " not declared")
+            else:
+                if not self._check_var_type(find.type.name, var_value,line_number):
+                    print(f"ERROR-in line {line_number}:  variable " + var_name + " is type "+ find.type.name +".  \n")
+
+
+
+
+    '''
+      Este mteodo se encarga de comparar si el valor que se esta asignando es igual al que esta dentro de la variable
+      ya guardada een eel hastable, ejemplo: n = " mayor", n en eel hastable seria string, pero si se pone n = 5, deberia
+      de dar error.
+      var_type es de la variable que esta dentro del hashtable y valor que se esta asignando 
+      '''
+    def _check_var_type(self, var_type,var_value,line_number):
+
+        #pattern1 es x= x + 5
+        pattern1 = r'\b(\w+)\s*([+*\/-])\s*([^\n]+)\b'
+
+        # pattern2 es x = x
+        pattern2 =  r'\b([a-zA-Z])\b'
+        matches = re.findall(pattern1, var_value)
+
+        matches2 = re.findall(pattern2, var_value)
+        if matches:
+            for match in matches:
+                var_name, operator, var_value = match
+                find = self.scopeStack.find(var_name)
+                if find == None:
+                    #print(f"ERROR-in line {line_number}:  variable " + var_name + " not declared")
+                    return False
+                elif find.type.name != var_type:
+                    #print(f"ERROR-in line {line_number}:  variable " + var_name + " not declared")
+                    return False
+                else:
+                    return True
+                
+
+        elif var_type == 'int' and var_value.isdigit():
+                return True
+        elif var_type == 'float' and var_value.replace(".", "").isdigit():
+                return True
+        elif var_type == 'string' and not var_value.isdigit() and not var_value.replace(".", "").isdigit():
+                return True
+        elif matches2:
+            for match in matches2:
+                second_var = match
+                find = self.scopeStack.find(second_var)
+                if find == None:
+
+                    return False
+                elif find.type.name != var_type:
+
+                    return False
+                else:
+                    return True
+
+
 
 
     def chek_return_var(self, var_name):
@@ -401,6 +471,8 @@ print("\n<---------------Codigo fuente incorrecto-------------------------------
 symbol_table = SymbolTable()
 symbol_table.createSymbolTable("codigoincorrecto.txt")
 #print(symbol_table)
-print("\n<---------------Codigo fuente correcto-----------------------------------> \n")
+print("\n<--------------- Otro Codigo fuente correcto-----------------------------------> \n")
+print("\nNo hay errores si todo esta correcto\n")
+
 symbol_table2 = SymbolTable()
 symbol_table2.createSymbolTable("codigoBueno.txt")
